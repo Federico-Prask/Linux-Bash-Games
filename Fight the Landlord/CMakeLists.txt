@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.16)
+project(doudizhu_ai LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_executable(doudizhu main.cpp)
+target_compile_options(doudizhu PRIVATE -O3 -Wall -Wextra -pedantic)
+
+# A10-8770 实际有4个CPU核心。OpenMP只并行Top-64候选的模型推理。
+option(DDZ_OPENMP "Use OpenMP for CPU model inference" ON)
+if(DDZ_OPENMP)
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_compile_definitions(doudizhu PRIVATE DDZ_USE_OPENMP=1)
+        target_link_libraries(doudizhu PRIVATE OpenMP::OpenMP_CXX)
+        message(STATUS "Dou Dizhu AI: OpenMP CPU inference enabled")
+    else()
+        message(WARNING "OpenMP not found; building single-thread CPU inference")
+    endif()
+endif()
+
+option(DDZ_NATIVE "Optimize for this CPU (-march=native)" ON)
+if(DDZ_NATIVE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(doudizhu PRIVATE -march=native)
+endif()
